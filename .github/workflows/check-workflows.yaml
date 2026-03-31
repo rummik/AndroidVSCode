@@ -33,9 +33,9 @@ jobs:
           ACTIONLINT_VERSION: 1.7.12
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download --repo rhysd/actionlint --pattern "*_linux_amd64.tar.gz" v${ACTIONLINT_VERSION}
-          gh attestation verify -R rhysd/actionlint actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz
-          tar xf actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz
+          gh release download --repo rhysd/actionlint --pattern "*_linux_amd64.tar.gz" "v${ACTIONLINT_VERSION}"
+          gh attestation verify -R rhysd/actionlint "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          tar xf "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
 
       - name: Run actionlint
         run: ./actionlint
