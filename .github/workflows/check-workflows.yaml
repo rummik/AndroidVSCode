@@ -14,7 +14,8 @@ on:
 
   workflow_dispatch:
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -23,12 +24,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
+      - name: Install actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download --repo rhysd/actionlint --pattern "*_linux_amd64.tar.gz" v${ACTIONLINT_VERSION}
+          gh attestation verify -R rhysd/actionlint actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz
+          tar xf actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz
+
       - name: Run actionlint
-        uses: raven-actions/actionlint@v2
+        run: ./actionlint
 
   audit:
     name: Audit workflow security
@@ -38,11 +48,82 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
 
       - name: Run zizmor
         uses: zizmorcore/zizmor-action@71321a20a9ded102f6e9ce5718a2fcec2c4f70d8 # v0.5.2
         with:
-          advanced-security: ${{ github.actor == 'nektos/act' && 'false' || 'true' }}
+          advanced-security: ${{ github.actor != 'nektos/act' }}
+
+  pin:
+    name: Check pinned actions
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install pinact
+        uses: suzuki-shunsuke/pinact-action@cf51507d80d4d6522a07348e3d58790290eaf0b6 # v2.0.0
+        with:
+          skip_push: true
+
+
+  changed-files:
+    name: Check modified workflows
+    runs-on: ubuntu-latest
+    outputs:
+      any_changed: ${{ steps.changed-files.outputs.any_changed }}
+      changed_files: ${{ steps.changed-files.outputs.changed_files }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Changed Files
+        id: changed-files
+        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
+        with:
+          files: .github/workflows/*.yaml
+
+  test-ci:
+    name: Test Android CI workflow
+    runs-on: ubuntu-latest
+    needs: changed-files
+    if: contains(needs.changed-files.outputs.changed_files, 'android-ci.yaml')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install act
+        run: gh extension install https://github.com/nektos/gh-act
+
+      - name: Run Android CI workflow with act
+        run: gh act -j build -W .github/workflows/android-ci.yaml
+
+  test-release:
+    name: Test Android Release workflow
+    runs-on: ubuntu-latest
+    needs: changed-files
+    if: contains(needs.changed-files.outputs.changed_files, 'android-release.yaml')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install act
+        run: gh extension install https://github.com/nektos/gh-act
+
+      - name: Run Android Release workflow with act
+        run: gh act -j release -W .github/workflows/android-release.yaml
