@@ -1,0 +1,48 @@
+name: Check GitHub Workflows
+
+on:
+  push:
+    branches:
+      - main
+
+    paths:
+      - .github/workflows/*.yaml
+
+  pull_request:
+    paths:
+      - .github/workflows/*.yaml
+
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  lint:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Run actionlint
+        uses: raven-actions/actionlint@v2
+
+  audit:
+    name: Audit workflow security
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@71321a20a9ded102f6e9ce5718a2fcec2c4f70d8 # v0.5.2
+        with:
+          advanced-security: ${{ github.actor == 'nektos/act' && 'false' || 'true' }}
