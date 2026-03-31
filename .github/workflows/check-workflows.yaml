@@ -96,7 +96,7 @@ jobs:
     name: Test Android CI workflow
     runs-on: ubuntu-latest
     needs: changed-files
-    if: contains(needs.changed-files.outputs.changed_files, 'android-ci.yaml')
+    if: contains(needs.changed-files.outputs.changed_files, '.github/workflows/android-ci.yaml')
 
     steps:
       - name: Checkout
@@ -114,7 +114,7 @@ jobs:
     name: Test Android Release workflow
     runs-on: ubuntu-latest
     needs: changed-files
-    if: contains(needs.changed-files.outputs.changed_files, 'android-release.yaml')
+    if: contains(needs.changed-files.outputs.changed_files, '.github/workflows/android-release.yaml')
 
     steps:
       - name: Checkout
